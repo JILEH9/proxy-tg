@@ -1,0 +1,51 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    restart: always
+    command:
+      # Включаем API (опционально) и Docker-провайдер
+      - "--api.insecure=false"           # не открываем API наружу
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # Настройка точек входа
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Перенаправление HTTP → HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=${SSL_EMAIL}"  # ← укажите свой email
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - traefik_data:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - web
+
+  app:
+    build: .
+    container_name: webhook-proxy
+    restart: always
+    environment:
+      - PORT=8080
+    labels:
+      # Включаем Traefik для этого сервиса
+      - "traefik.enable=true"
+      # Роутер для HTTPS (основной)
+      - "traefik.http.routers.app.rule=Host(`${DOMAIN_NAME}`)"  # ← ваш домен
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      # Сервис (куда направлять трафик)
+      - "traefik.http.services.app.loadbalancer.server.port=8080"
+    networks:
+      - web
+volumes:
+  traefik_data:
+networks:
+  web:
+    external: false
