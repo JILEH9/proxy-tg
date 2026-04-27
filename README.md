@@ -58,3 +58,16 @@ Content-Type: application/json
 - **Go 1.23**
 - **Traefik v3** — reverse proxy + автоматический TLS
 - **Docker Compose**
+
+---
+
+## Контакты
+
+- Telegram: [@Miirrox](https://t.me/Miirrox)
+- GitHub: [JILEH9](https://github.com/JILEH9)
+
+---
+
+## Лицензия
+
+[MIT](./LICENSE)
